@@ -27,6 +27,14 @@ def make_request():
     return response
 
 
+classes = [
+    "Spider", "Golem", "Enderman", "Squid", "Dreadlord", "Arcanist",
+    "Pirate", "Skeleton", "Zombie", "Spider", "Pigman", "Blaze", "Moleman",
+    "Hunter", "Creeper", "Shaman", "Herobrine", "Phoenix", "Werewolf", "Automaton",
+    "Assassin", "Cow", "Renegade", "Shark", "Snowman"
+]
+
+
 def print_statistics(response):
     if response.status_code == 200:
         data = response.json()
@@ -37,18 +45,11 @@ def print_statistics(response):
         chosen_class = data["player"]["stats"]["Walls3"]["chosen_class"]
         print(f"Chosen class: {chosen_class}")
 
-        skins = [
-            "Spider", "Golem", "Enderman", "Squid", "Dreadlord", "Arcanist",
-            "Pirate", "Skeleton", "Zombie", "Spider", "Pigman", "Blaze", "Moleman",
-            "Hunter", "Creeper", "Shaman", "Herobrine", "Phoenix", "Werewolf", "Automaton",
-            "Assassin", "Cow", "Renegade", "Shark", "Snowman"
-        ]
-
         counter = 0
-        for skin in skins:
+        for mw_class in classes:
             if counter >= 5:
                 break
-            key = f"chosen_skin_{skin}"
+            key = f"chosen_skin_{mw_class}"
             value = data["player"]["stats"]["Walls3"][key]
             counter += 1
             print(f"{key}: {value} | {counter}")
@@ -56,7 +57,10 @@ def print_statistics(response):
         print(f"Error: {response.status_code}, {response.text}")
 
 
-def test_database_connection():
+def add_classes_to_database(class_list):
+    connection = None
+    cursor = None
+
     # test connection
     try:
         connection = psycopg2.connect(
@@ -66,16 +70,34 @@ def test_database_connection():
             host=os.getenv('DB_HOST'),
             port=os.getenv('DB_PORT'),
         )
+        cursor = connection.cursor()
         print("database connection successful")
+
+        for class_name in classes:
+            cursor.execute(
+                'INSERT INTO classes ("class_name") VALUES (%s) ON CONFLICT DO NOTHING',
+                (class_name,)
+            )
+        connection.commit()
+        print(f"Classes inserted successfully")
+
     except Exception as e:
         print(f"Error: {e}")
+        connection.rollback()
+
+    finally:
+        # Close the cursor and connection
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 def main():
     try:
         response = make_request()
         print_statistics(response)
-        test_database_connection()
+        # test_database_connection(classes)
     except Exception as e:
         print(f"An error occured: {e}")
 
