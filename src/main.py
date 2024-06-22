@@ -1,9 +1,14 @@
 # main.py
+from dotenv import load_dotenv
+import os
 import requests
+
+load_dotenv()
 
 baseURL = "https://api.hypixel.net/"
 playerUUID = "0fcdbe40-28e9-43fa-9946-7dc648656e17"  # Faiths
-apiKey = "dc189e3f-3bfd-4129-9421-2099ce309ed7"
+apiKey = os.getenv('API-KEY')
+print(apiKey)
 
 headers = {
     "API-Key": apiKey
