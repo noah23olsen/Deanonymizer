@@ -7,29 +7,24 @@ import requests
 # load environment variables from .env file
 load_dotenv()
 
-# hypixel api details
-baseURL = "https://api.hypixel.net/"
-playerUUID = "0fcdbe40-28e9-43fa-9946-7dc648656e17"  # Faiths
+# constants for the hypixel API
+BASE_URL = "https://api.hypixel.net/"
+PLAYER_UUID = "0fcdbe40-28e9-43fa-9946-7dc648656e17"  # Faith's UUID
 
 
 def get_api_key():
-    result = os.getenv('API-KEY')
+    api_key = os.getenv('API-KEY')
 
-    if not result:
+    if not api_key:
         raise ValueError("api key was not found in the .env file.")
-
-    return result
+    return api_key
 
 
 def make_request():
-    headers = {
-        "API-Key": get_api_key()
-    }
-    url = f"{baseURL}player?uuid={playerUUID}"
-    return requests.get(url, headers=headers)
-
-
-response = make_request()
+    headers = {"API-Key": get_api_key()}
+    url = f"{BASE_URL}player?uuid={PLAYER_UUID}"
+    response = requests.get(url, headers=headers)
+    return response
 
 
 def print_statistics(response):
@@ -61,9 +56,6 @@ def print_statistics(response):
         print(f"Error: {response.status_code}, {response.text}")
 
 
-print_statistics(response)
-
-
 def test_database_connection():
     # test connection
     try:
@@ -79,4 +71,13 @@ def test_database_connection():
         print(f"Error: {e}")
 
 
-test_database_connection()
+def main():
+    try:
+        response = make_request()
+        print_statistics(response)
+        test_database_connection()
+    except Exception as e:
+        print(f"An error occured: {e}")
+
+
+main()
