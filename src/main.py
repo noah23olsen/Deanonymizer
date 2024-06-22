@@ -27,7 +27,7 @@ def make_request():
     return response
 
 
-classes = [
+classes_original = [
     "Spider", "Golem", "Enderman", "Squid", "Dreadlord", "Arcanist",
     "Pirate", "Skeleton", "Zombie", "Spider", "Pigman", "Blaze", "Moleman",
     "Hunter", "Creeper", "Shaman", "Herobrine", "Phoenix", "Werewolf", "Automaton",
@@ -35,7 +35,27 @@ classes = [
 ]
 
 
-def print_statistics(response):
+def get_classes():
+    try:
+        connection = psycopg2.connect(**connection_parameters)
+        cursor = connection.cursor()
+
+        query = "SELECT class_name FROM classes"
+
+        cursor.execute(query)
+
+        rows = cursor.fetchall()
+
+        classes = [row[0] for row in rows]
+
+        #print(classes)
+
+        return classes
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def print_statistics(response, class_list):
     if response.status_code == 200:
         data = response.json()
 
@@ -46,7 +66,7 @@ def print_statistics(response):
         print(f"Chosen class: {chosen_class}")
 
         counter = 0
-        for mw_class in classes:
+        for mw_class in class_list:
             if counter >= 5:
                 break
             key = f"chosen_skin_{mw_class}"
@@ -57,21 +77,24 @@ def print_statistics(response):
         print(f"Error: {response.status_code}, {response.text}")
 
 
+connection_parameters = {
+    "dbname": os.getenv('DB_NAME'),
+    "user": os.getenv('DB_USER'),
+    "password": os.getenv('DB_PASSWORD'),
+    "host": os.getenv('DB_HOST'),
+    "port": os.getenv('DB_PORT'),
+}
+
+
 def add_classes_to_database(class_list):
     connection = None
     cursor = None
 
     # test connection
     try:
-        connection = psycopg2.connect(
-            dbname=os.getenv('DB_NAME'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD'),
-            host=os.getenv('DB_HOST'),
-            port=os.getenv('DB_PORT'),
-        )
-        cursor = connection.cursor()
+        connection = psycopg2.connect(**connection_parameters)
         print("database connection successful")
+        cursor = connection.cursor()
 
         for class_name in classes:
             cursor.execute(
@@ -96,8 +119,10 @@ def add_classes_to_database(class_list):
 def main():
     try:
         response = make_request()
-        print_statistics(response)
-        # test_database_connection(classes)
+        classes = get_classes()
+        print_statistics(response, classes)
+        #add_classes_to_database(classes_original)
+        get_classes()
     except Exception as e:
         print(f"An error occured: {e}")
 
