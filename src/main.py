@@ -11,6 +11,14 @@ load_dotenv()
 BASE_URL = "https://api.hypixel.net/"
 PLAYER_UUID = "0fcdbe40-28e9-43fa-9946-7dc648656e17"  # Faith's UUID
 
+# original classes we inserted into the database
+classes_original = [
+    "Spider", "Golem", "Enderman", "Squid", "Dreadlord", "Arcanist",
+    "Pirate", "Skeleton", "Zombie", "Spider", "Pigman", "Blaze", "Moleman",
+    "Hunter", "Creeper", "Shaman", "Herobrine", "Phoenix", "Werewolf", "Automaton",
+    "Assassin", "Cow", "Renegade", "Shark", "Snowman"
+]
+
 
 def get_api_key():
     api_key = os.getenv('API-KEY')
@@ -20,19 +28,32 @@ def get_api_key():
     return api_key
 
 
-def make_request():
+def get_player_stats():
     headers = {"API-Key": get_api_key()}
     url = f"{BASE_URL}player?uuid={PLAYER_UUID}"
     response = requests.get(url, headers=headers)
     return response
 
 
-classes_original = [
-    "Spider", "Golem", "Enderman", "Squid", "Dreadlord", "Arcanist",
-    "Pirate", "Skeleton", "Zombie", "Spider", "Pigman", "Blaze", "Moleman",
-    "Hunter", "Creeper", "Shaman", "Herobrine", "Phoenix", "Werewolf", "Automaton",
-    "Assassin", "Cow", "Renegade", "Shark", "Snowman"
-]
+def get_online_status():
+    headers = {"API-Key": get_api_key()}
+    url = f"{BASE_URL}status?uuid={PLAYER_UUID}"
+    response = requests.get(url, headers=headers)
+    print(f"Online: {response.json()["session"]["online"]}")
+    return response.json()
+
+
+def get_recent_games():
+    headers = {"API-Key": get_api_key()}
+    url = f"{BASE_URL}recentgames?uuid={PLAYER_UUID}"
+    response = requests.get(url, headers=headers)
+    recent_games = response.json()["games"]
+
+    if not recent_games:
+        print(f"There were no recent games found for {PLAYER_UUID}")
+    else:
+        print(f"Recent Games: {response.json()["games"]}")
+    return response.json()
 
 
 def get_classes():
@@ -63,7 +84,11 @@ def print_statistics(response, class_list):
         print(f"Display Name: {display_name}")
 
         chosen_class = data["player"]["stats"]["Walls3"]["chosen_class"]
-        print(f"Chosen class: {chosen_class}")
+        print(f"Current class: {chosen_class}")
+
+        key = f"chosen_skin_{chosen_class}"
+        current_skin = data["player"]["stats"]["Walls3"][key]
+        print(f"Current skin: {current_skin}")
 
         counter = 0
         for mw_class in class_list:
@@ -72,7 +97,7 @@ def print_statistics(response, class_list):
             key = f"chosen_skin_{mw_class}"
             value = data["player"]["stats"]["Walls3"][key]
             counter += 1
-            print(f"{key}: {value} | {counter}")
+            #print(f"{key}: {value} | {counter}")
     else:
         print(f"Error: {response.status_code}, {response.text}")
 
@@ -96,7 +121,7 @@ def add_classes_to_database(class_list):
         print("database connection successful")
         cursor = connection.cursor()
 
-        for class_name in classes:
+        for class_name in class_list:
             cursor.execute(
                 'INSERT INTO classes ("class_name") VALUES (%s) ON CONFLICT DO NOTHING',
                 (class_name,)
@@ -118,11 +143,10 @@ def add_classes_to_database(class_list):
 
 def main():
     try:
-        response = make_request()
-        classes = get_classes()
-        print_statistics(response, classes)
-        #add_classes_to_database(classes_original)
-        get_classes()
+        get_online_status()
+        get_recent_games()
+        print_statistics(get_player_stats(), get_classes())
+        # add_classes_to_database(classes_original)
     except Exception as e:
         print(f"An error occured: {e}")
 
